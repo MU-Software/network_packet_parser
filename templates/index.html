@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="https://unpkg.com/mvp.css" />
+    <title>Internet Protocol Analyzer</title>
+    <style>
+      #forceLineBreak {
+        flex-direction: column;
+        align-items: center;
+      }
+      #forceLineBreak > aside {
+        width: 80%;
+      }
+      pre {
+        border: 1px solid var(--color-bg-secondary);
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow) var(--color-shadow);
+
+        background-color: #fff;
+        min-height: 48pt;
+        margin: 0;
+        padding: 1.5rem;
+
+        max-width: var(--width-card-wide);
+        min-width: var(--width-card);
+
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      aside {
+        max-width: calc(var(--width-card-wide) - 48px);
+      }
+      h3 {
+        margin-top: 0;
+      }
+      input[type=submit] {
+        margin: 0;
+        background-color: #2979ff;
+        color: #fff;
+      }
+      textarea {
+        width: calc(100% - 24px);
+      }
+    </style>
+    <script type="text/javascript" src="/static/src/json-viewer.js"></script>
+    <link rel="stylesheet" type="text/css" href="/static/src/json-viewer.css">
+  </head>
+  <body>
+    <section id="forceLineBreak">
+      <header>
+        <h1>프로토콜 분석 (Protocol Analyzer)</h1>
+        <p>현재 <sup>Ethernet II</sup><sup>ARP</sup><sup>IPv4</sup><sup>ICMP</sup><sup>TCP</sup><sup>UDP</sup>가 구현되어 있습니다.</p>
+        <p>Currently support <sup>Ethernet II</sup><sup>ARP</sup><sup>IPv4</sup><sup>ICMP</sup><sup>TCP</sup><sup>UDP</sup> packets<br /></p>
+      </header>
+
+      <aside> <!-- Image Upload -->
+        <h3>Ethernet Packet Analyzer</h3>
+        <script>
+          var jsonObj = {};
+          var jsonViewer = new JSONViewer();
+          var defaultText = '001e902ec7eb0019e77a753f080045000034dbf74000f206e2ecdc5fe9abde6a25690050c61215e928e73538db8780121ffe6f360000020405b40103030201010402';
+
+          function textareaOnClick(e) {
+            if (defaultText === null)
+              return;
+
+            if (e.value === defaultText) {
+              e.value = '';
+              defaultText = null;
+            }
+          }
+          window.onload = () => {
+            document.getElementById('packetInputTextarea').value = defaultText;
+          }
+
+          function packetRequest() {
+            var resultPre = document.getElementById('packetParseResult');
+            var formData = new FormData(document.getElementById('packetInputForm'));
+
+            var xhr = new XMLHttpRequest();
+            xhr.onload = () => {
+              var isSuccess = ''
+              if (xhr.status === 200 && JSON.parse(xhr.response).success === true) {
+                isSuccess = 'SUCCESS!'
+                jsonViewer.showJSON(JSON.parse(JSON.parse(xhr.response).data))
+              } else {
+                isSuccess = 'FAILED!'
+                jsonViewer.showJSON(JSON.parse('{}'))
+              }
+              resultPre.textContent = isSuccess + ' CODE = ' + xhr.status.toString()
+              resultPre.textContent += '\r\nRESULT_DATA = ' + JSON.stringify(JSON.parse(xhr.response), null, 2);
+            }
+
+            xhr.open('POST', '/packet');
+            xhr.send(formData);
+          }
+        </script>
+        <form
+          action="/packet"
+          method="post"
+          enctype="multipart/form-data"
+          id="packetInputForm">
+          <textarea
+            id="packetInputTextarea"
+            name="packet_data"
+            rows="8"
+            onclick="textareaOnClick(this)"></textarea>
+          <label>
+            <input type="checkbox" name="include_data" checked />파싱 결과에 RAW 데이터를 포함합니다.
+          </label>
+          <input type="submit" onclick="packetRequest(); return false;" />
+        </form>
+
+        <h5>JSON Viewer</h5>
+        <div id="jsonResult"></div>
+        <script>
+          document.querySelector("#jsonResult").appendChild(jsonViewer.getContainer());
+        </script>
+
+        <h5>Request result(RAW)</h5>
+        <pre id="packetParseResult">
+        </pre>
+
+      </aside>
+    </section>
+  </body>
+</html>
